@@ -20,6 +20,10 @@
 # include <mkl.h>
 #endif
 
+#if !defined(USE_MKL) && !defined(USE_OPEN_MP) && !defined(USE_BLOCKING)
+# define USE_ORIGINAL
+#endif
+
 #define MIN(a, b)   ((a < b) ? a : b)
 
 #ifdef FOR_DEBUG
@@ -144,6 +148,30 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 #ifdef USE_MKL
   const char N = 'N';
   dgemm(&N, &N, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+#endif
+
+#ifdef USE_ORIGINAL
+  /* Iterate over the columns of C */
+  for (col = 0; col < n; col++) {
+
+    /* Iterate over the rows of C */
+    for (row = 0; row < m; row++) {
+
+      int k_iter;
+      double dotprod = 0.0; /* Accumulates the sum of the dot-product */
+
+      /* Iterate over column of A, row of B */
+      for (k_iter = 0; k_iter < k; k_iter++) {
+        int a_index, b_index;
+        a_index = (k_iter * lda) + row; /* Compute index of A element */
+        b_index = (col * ldb) + k_iter; /* Compute index of B element */
+        dotprod += A[a_index] * B[b_index]; /* Compute product of A and B */
+      } /* k_iter */
+
+      int c_index = (col * ldc) + row;
+      C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
+    } /* row */
+  } /* col */
 #endif
 
 }
