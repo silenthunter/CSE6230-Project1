@@ -83,7 +83,7 @@ time_mm_mkl : time_mm.c matrix_utils.o local_mm_mkl.o
 time_mm_blocking : time_mm.c matrix_utils.o local_mm_blocking.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-time_mm : time_mm_original time_mm_openmp time_mm_mkl time_mm_blocking
+time_mm : time_mm_original time_mm_openmp time_mm_blocking time_mm_mkl
 
 unittest_mm : unittest_mm_original unittest_mm_blocking unittest_mm_mkl unittest_mm_openmp
 
