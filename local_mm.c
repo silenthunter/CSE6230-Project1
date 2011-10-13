@@ -45,6 +45,27 @@
 #define MIN(a, b)   ((a < b) ? a : b)
 #define MAX(a, b)   ((a > b) ? a : b)
 
+static double* arrange_to_page(int height, int width, double *mat, int rows, int cols)
+{
+  int i, j;
+
+  int blockSize = width * height;
+  for(i = 0; i < rows; i++)
+  {
+    for(j = 0; j < cols; j++)
+    {
+      int idx = i + cols * rows;
+      int blockId = idx / blockSize;
+      idx -= blockId * blockSize;
+     
+      int blockX = idx / height;
+      int blockY = idx % height;
+
+      page[blockId * blockSize + blockX * height + blockY] = mat[idx];
+    }
+  }
+}
+
 static void print_matrix(int rows, int cols, const double *mat) {
 
   int r, c;
