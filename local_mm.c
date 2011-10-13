@@ -98,6 +98,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
 #ifdef USE_BLOCKING
 
+#ifdef NONO
   int i, j;
   double* At; /* A transposed, aligned to L2 TLB page */
 
@@ -122,35 +123,49 @@ void local_mm(const int m, const int n, const int k, const double alpha,
         assert(a_col + a_row*num_at_rows < m*k);
       }
     }
+#endif
 
-  /* TODO: Iterate over transposed A rows/cols */
-  /* TODO: Are we assuming m==n? */
+  /* 8/16/32 utilizes 7168 bytes in the inner loop */
+  int k_block;
+  int i_block;
+  int j_block;
 
-  /* Iterate over the columns of C */
-  for (col = 0; col < n; col++) {
+  const int bk = 8;
+  const int bm = 16;
+  const int bn = 32;
 
-    /* Iterate over the rows of C */
-    for (row = 0; row < m; row++) {
+  for (k_block = 0; k_block < k/bk; k_block++)
+  {
+    for (i_block = 0; i_block < m/bm; i_block++)
+    {
+      for (j_block = 0; j_block < n/bn; j_block++)
+      {
 
-      int k_iter;
-      double dotprod = 0.0; /* Accumulates the sum of the dot-product */
+        /* Iterate over the columns of C */
+        for (col = j_block*bn ; col < (j_block+1)*bn; col++) {
 
-      /* Iterate over column of A, row of B */
-      for (k_iter = 0; k_iter < k; k_iter++) {
-        int a_index, b_index;
-        a_index = (row * lda) + k_iter; /* Compute index of A element */
-        b_index = (col * ldb) + k_iter; /* Compute index of B element */
-        dotprod += b2[a_index] * B[b_index]; /* Compute product of A and B */
-      } /* k_iter */
+          /* Iterate over the rows of C */
+          for (row = i_block*bm ; row < (i_block-1)*bm; row++) {
 
-      int c_index = (col * ldc) + row;
-      C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
-    } /* row */
-  } /* col */
+            int k_iter;
+            double dotprod = 0.0; /* Accumulates the sum of the dot-product */
 
+            /* Iterate over column of A, row of B */
+            for (k_iter = k_block*bk; k_iter < (k_block-1)*bk; k_iter++) {
+              int a_index, b_index;
+              a_index = (row * lda) + k_iter; /* Compute index of A element */
+              b_index = (col * ldb) + k_iter; /* Compute index of B element */
+              dotprod += A[a_index] * B[b_index]; /* Compute product of A and B */
+            } /* k_iter */
 
-
+            int c_index = (col * ldc) + row;
+            C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
+          } /* row */
+        } /* col */
+      }
+    }
   }
+
 
 
 
