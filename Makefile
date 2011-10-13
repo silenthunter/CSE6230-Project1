@@ -19,9 +19,10 @@ all:
 
 LANG = C
 
+LINK_OPENMP_GCC = -fopenmp
 
 CC = mpicc
-CFLAGS = -O -Wall -Wextra -lm
+CFLAGS = -O -Wall -Wextra -lm $(LINK_OPENMP_GCC)
 
 FC = mpif90
 FFLAGS = -O
