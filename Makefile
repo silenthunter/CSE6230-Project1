@@ -12,7 +12,8 @@ all:
 	@echo "    time_mm_original : Build program to time local_mm (original)"
 	@echo "      time_mm_openmp : Build program to time local_mm (open MP)"
 	@echo "         time_mm_mkl : Build program to time local_mm (Intel MKL)"
-	@echo "    time_mm_blocking : Build program to time local_mm (blocking technique)"
+	@echo "    time_mm_blocking : Build program to time local_mm (L1/L2 blocking technique)"
+	@echo "         time_mm_tlb : Build program to time local_mm (TLB considerations technique)"
 	@echo "          time_summa : Build program to time summa"
 	@echo "    run--unittest_mm : Submit unittest_mm job"
 	@echo " run--unittest_summa : Submit unittest_summa job"
@@ -56,6 +57,9 @@ local_mm_mkl.o : local_mm.c local_mm.f90 local_mm.h
 local_mm_blocking.o : local_mm.c local_mm.f90 local_mm.h
 	$(CC) $(CFLAGS) -DUSE_BLOCKING -o $@ -c local_mm.c
 
+local_mm_tlb.o : local_mm.c local_mm.f90 local_mm.h
+	$(CC) $(CFLAGS) -DUSE_TLB -o $@ -c local_mm.c
+
 matrix_utils.o : matrix_utils.c matrix_utils.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
@@ -71,6 +75,9 @@ unittest_mm_mkl : unittest_mm.c matrix_utils.o local_mm_mkl.o
 unittest_mm_blocking : unittest_mm.c matrix_utils.o local_mm_blocking.o
 	$(CC) $(CFLAGS) -o $@ $^
 
+unittest_mm_tlb : unittest_mm.c matrix_utils.o local_mm_tlb.o
+	$(CC) $(CFLAGS) -o $@ $^
+
 time_mm_original : time_mm.c matrix_utils.o local_mm_original.o
 	$(CC) $(CFLAGS) -o $@ $^
 
@@ -83,9 +90,12 @@ time_mm_mkl : time_mm.c matrix_utils.o local_mm_mkl.o
 time_mm_blocking : time_mm.c matrix_utils.o local_mm_blocking.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-time_mm : time_mm_original time_mm_openmp time_mm_blocking time_mm_mkl
+time_mm_tlb : time_mm.c matrix_utils.o local_mm_tlb.o
+	$(CC) $(CFLAGS) -o $@ $^
 
-unittest_mm : unittest_mm_original unittest_mm_blocking unittest_mm_mkl unittest_mm_openmp
+time_mm : time_mm_original time_mm_openmp time_mm_blocking time_mm_tlb time_mm_mkl
+
+unittest_mm : unittest_mm_original unittest_mm_blocking unittest_mm_tlb unittest_mm_mkl unittest_mm_openmp
 
 unittest_summa : matrix_utils.o $(MM) $(SUMMA) unittest_summa.o
 ifeq ($(LANG),C)

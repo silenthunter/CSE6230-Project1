@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#if defined(USE_BLOCKING)
+#if defined(USE_TLB)
 # include <string.h>
 #endif
 
@@ -20,7 +20,7 @@
 # include <mkl.h>
 #endif
 
-#if !defined(USE_MKL) && !defined(USE_OPEN_MP) && !defined(USE_BLOCKING)
+#if !defined(USE_MKL) && !defined(USE_OPEN_MP) && !defined(USE_TLB) && !defined(USE_BLOCKING)
 # define USE_ORIGINAL
 #endif
 
@@ -80,6 +80,12 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(ldc >= m);
 
 #ifdef USE_BLOCKING
+
+
+
+#endif /* USE_BLOCKING */
+
+#ifdef USE_TLB
   int i, j;
   double* b2 = (double*)malloc(sizeof(double) * k * n);
   memcpy(b2, A, sizeof(double) * k * n);
@@ -118,7 +124,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   } /* col */
 
   free(b2);
-#endif /* USE_BLOCKING */
+#endif /* USE_TLB */
 
 #ifdef USE_OPEN_MP
 # pragma omp parallel for private(col, row)
