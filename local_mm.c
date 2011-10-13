@@ -10,6 +10,10 @@
 #include <string.h>
 #include <omp.h>
 #include <math.h>
+#include "matrix_utils.h"
+
+#define MAX(a, b) ((a < b) ? b : a)
+#define MIN(a, b) ((a < b) ? a : b)
 
 /**
  *
@@ -47,31 +51,37 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(ldb >= k);
   assert(ldc >= m);
 
+  //print_matrix(m, k, A);
 
-  for(proc = 0; proc < omp_get_num_threads(); proc++)
+
+  for(proc = 0; proc < 2; proc++)//omp_get_num_threads(); proc++)
   {
-  int threads = omp_get_num_threads();
+  printf("Loop\n");
+  int threads = 2;//omp_get_num_threads();
   int width = m / threads;
 
-  double* b2 = (double*)malloc(sizeof(double) * k * m);
-  memcpy(b2, &A[proc * width * m], sizeof(double) * width * m);
+  double* b2 = (double*)malloc(sizeof(double) * width * k);
 
-  //Transpose A
-  for(i = 0; i < k; i++)
+  //print_matrix(m, k, A);
+
+  //Copy transpose A
+  for(i = 0; i < width * k; i++)
   {
-    for(j = i + 1; j < m; j++)
-    {
-      double tmp = b2[i + j * m];
-      b2[i + j * m] = b2[j + i * m];
-      b2[j + i * m] = tmp;
-    } 
+    b2[i] = A[(i % k) * m + i / k + proc * width];
+    //printf("idx: %d, A: %f\n", (i % k) * m + i / k + proc * width, b2[i]);
   }
+
+  /*for(i = 0; i < k * width; i++)
+  {
+    printf("%f ", b2[i]);
+    if(i % k == k - 1) printf("\n");
+  }*/
 
   /* Iterate over the columns of C */
   for (col = 0; col < n; col++) {
 
     /* Iterate over the rows of C */
-    for (row = 0; row < m; row++) {
+    for (row = proc * width; row < proc * width + width; row++) {
 
       int k_iter;
       double dotprod = 0.0; /* Accumulates the sum of the dot-product */
@@ -79,9 +89,10 @@ void local_mm(const int m, const int n, const int k, const double alpha,
       /* Iterate over column of A, row of B */
       for (k_iter = 0; k_iter < k; k_iter++) {
         int a_index, b_index;
-        a_index = (row * lda) + k_iter; /* Compute index of A element */
-        b_index = (col * ldb) + k_iter - proc * width * m; /* Compute index of B element */
+        a_index = (row * k) + k_iter - proc * width * k; /* Compute index of A element */
+        b_index = (col * ldb) + k_iter; /* Compute index of B element */
         dotprod += b2[a_index] * B[b_index]; /* Compute product of A and B */
+        //printf("C: %d, A: %d, B: %d, prod: %f\n", col * ldc + row, a_index, b_index, dotprod);
       } /* k_iter */
 
       int c_index = (col * ldc) + row;
