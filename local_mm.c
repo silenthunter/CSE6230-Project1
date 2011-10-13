@@ -11,6 +11,24 @@
 #include <omp.h>
 #include <math.h>
 
+#define MB *1024*1024
+#define KB *1024
+
+/* Intel Xeon X5650 CPU Gulftown (sixcore) */
+/* L1 and L2 cache are per core */
+#define L1_DATA_CACHE_SIZE (32 KB)
+#define L2_CACHE_SIZE (256 KB)
+#define L3_CACHE_SIZE (12 MB)
+
+#define TLB0_PAGE_SIZE (2 MB)
+#define TLB0_PAGE_SIZE_MAYBE (4 MB)
+#define TLB0_PAGE_ENTRIES 32
+#define L2_TLB_PAGE_ENTRIES 512
+
+#define TLB_PAGE_SIZE (4 KB)
+#define TLB_PAGE_ENTRIES 64
+#define L2_TLB_PAGE_SIZE (4 KB)
+
 /**
  *
  *  Local Matrix Multiply
