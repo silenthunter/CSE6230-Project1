@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <omp.h>
+#include <math.h>
 
 /**
  *
@@ -38,19 +40,26 @@ void local_mm(const int m, const int n, const int k, const double alpha,
     const double *A, const int lda, const double *B, const int ldb,
     const double beta, double *C, const int ldc) {
 
-  int row, col, i, j;
+  int row, col, i, j, proc;
 
   /* Verify the sizes of lda, ladb, and ldc */
   assert(lda >= m);
   assert(ldb >= k);
   assert(ldc >= m);
-  double* b2 = (double*)malloc(sizeof(double) * k * n);
-  memcpy(b2, A, sizeof(double) * k * n);
+
+
+  for(proc = 0; proc < omp_get_num_threads(); proc++)
+  {
+  int threads = omp_get_num_threads();
+  int width = m / threads;
+
+  double* b2 = (double*)malloc(sizeof(double) * k * m);
+  memcpy(b2, &A[proc * width * m], sizeof(double) * width * m);
 
   //Transpose A
   for(i = 0; i < k; i++)
   {
-    for(j = i + 1; j < n; j++)
+    for(j = i + 1; j < m; j++)
     {
       double tmp = b2[i + j * m];
       b2[i + j * m] = b2[j + i * m];
@@ -71,7 +80,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
       for (k_iter = 0; k_iter < k; k_iter++) {
         int a_index, b_index;
         a_index = (row * lda) + k_iter; /* Compute index of A element */
-        b_index = (col * ldb) + k_iter; /* Compute index of B element */
+        b_index = (col * ldb) + k_iter - proc * width * m; /* Compute index of B element */
         dotprod += b2[a_index] * B[b_index]; /* Compute product of A and B */
       } /* k_iter */
 
@@ -81,5 +90,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   } /* col */
 
   free(b2);
+}
 
 }
