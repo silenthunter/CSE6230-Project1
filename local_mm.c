@@ -54,7 +54,7 @@ static void print_matrix(int rows, int cols, const double *mat) {
     /* Iterate over the columns of the matrix */
     for (c = 0; c < cols; c++) {
       int index = (c * rows) + r;
-      fprintf(stderr, "%2.0lf ", mat[index]);
+      fprintf(stderr, "%.0lf ", mat[index]);
     } /* c */
     fprintf(stderr, "\n");
   } /* r */
@@ -88,8 +88,6 @@ static void print_matrix(int rows, int cols, const double *mat) {
 void local_mm(const int m, const int n, const int k, const double alpha,
     const double *A, const int lda, const double *B, const int ldb,
     const double beta, double *C, const int ldc) {
-
-  int row, col;
 
   /* Verify the sizes of lda, ladb, and ldc */
   assert(lda >= m);
@@ -125,53 +123,87 @@ void local_mm(const int m, const int n, const int k, const double alpha,
     }
 #endif
 
-  /* 8/16/32 utilizes 7168 bytes in the inner loop */
+  fputs("A=\n", stderr);
+  print_matrix(m, k, A);
+  fputs("B=\n", stderr);
+  print_matrix(k, n, B);
+
   int k_block;
   int i_block;
   int j_block;
 
+  /* 8/16/32 utilizes 7168 bytes in the inner loop */
+  /*
   const int bk = 8;
   const int bm = 16;
   const int bn = 32;
+  */
+
+  /* 4/8/8 utilizes 1024 bytes in the inner loop */
+  const int bk = 4;
+  const int bm = 8;
+  const int bn = 8;
 
   for (k_block = 0; k_block < k/bk; k_block++)
+  //for (k_block = 0; k_block < 1; k_block++)
   {
+    fprintf(stderr, "k_block=%i\n", k_block);
     for (i_block = 0; i_block < m/bm; i_block++)
+    //for (i_block = 0; i_block < 1; i_block++)
     {
+      fprintf(stderr, "i_block=%i\n", i_block);
       for (j_block = 0; j_block < n/bn; j_block++)
+      //for (j_block = 0; j_block < 1; j_block++)
       {
+        int block_row;
+        int block_col;
+        fprintf(stderr, "j_block=%i\n", j_block);
 
         /* Iterate over the columns of C */
-        for (col = j_block*bn ; col < (j_block+1)*bn; col++) {
+        for (block_col = 0; block_col < bn; block_col++) {
+
+          fprintf(stderr, "c_col=%i\n", block_col);
 
           /* Iterate over the rows of C */
-          for (row = i_block*bm ; row < (i_block-1)*bm; row++) {
+          for (block_row = 0; block_row < bm; block_row++) {
 
             int k_iter;
             double dotprod = 0.0; /* Accumulates the sum of the dot-product */
+            fprintf(stderr, "c_block_row=%i\n", block_row);
 
             /* Iterate over column of A, row of B */
-            for (k_iter = k_block*bk; k_iter < (k_block-1)*bk; k_iter++) {
+            for (k_iter = 0; k_iter < bk; k_iter++) {
               int a_index, b_index;
-              a_index = (row * lda) + k_iter; /* Compute index of A element */
-              b_index = (col * ldb) + k_iter; /* Compute index of B element */
-              dotprod += A[a_index] * B[b_index]; /* Compute product of A and B */
+              fprintf(stderr, "k_iter=%i\n", k_iter);
+              a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row;
+              fprintf(stderr, "A=%0.0f (%i)\n", A[a_index], a_index);
+              b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter;
+              fprintf(stderr, "B=%0.0f (%i)\n", B[b_index], b_index);
+              dotprod += A[a_index] * B[b_index];
+              fprintf(stderr, "dotprod=%0.0f\n", dotprod);
             } /* k_iter */
 
-            int c_index = (col * ldc) + row;
+            int c_index = (block_col + j_block*bn) * m + (block_row + i_block*bm);
+            fprintf(stderr, "(before) C=%0.0f (%i); %0.0f\n", C[c_index], c_index, dotprod);
             C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
-          } /* row */
-        } /* col */
+            //fprintf(stderr, "(after) alpha=%0f, beta=%0f\n", alpha, beta);
+            fprintf(stderr, "(after) C=%0.0f (%i); %0.0f\n", C[c_index], c_index, dotprod);
+          } /* block_row */
+        } /* block_col */
+
       }
     }
   }
 
+  fputs("C =\n", stderr);
+  print_matrix(m, n, C);
 
 
 
 #endif /* USE_BLOCKING */
 
 #ifdef USE_TLB
+  int row, col;
   int i, j;
   double* b2 = (double*)malloc(sizeof(double) * k * n);
   memcpy(b2, A, sizeof(double) * k * n);
@@ -213,6 +245,8 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 #endif /* USE_TLB */
 
 #ifdef USE_OPEN_MP
+  int row, col;
+
 # pragma omp parallel for private(col, row)
   /* Iterate over the columns of C */
   for (col = 0; col < n; col++) {
@@ -243,6 +277,8 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 #endif
 
 #ifdef USE_ORIGINAL
+  int row, col;
+
   /* Iterate over the columns of C */
   for (col = 0; col < n; col++) {
 
