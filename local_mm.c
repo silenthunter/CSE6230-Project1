@@ -123,11 +123,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
     }
 #endif
 
-  fputs("A=\n", stderr);
-  print_matrix(m, k, A);
-  fputs("B=\n", stderr);
-  print_matrix(k, n, B);
-
   int k_block;
   int i_block;
   int j_block;
@@ -144,58 +139,50 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   */
 
   /* 4/8/8 utilizes 1024 bytes in the inner loop */
+  /*
   const int bk = 4;
   const int bm = 8;
   const int bn = 8;
+  */
+
+  /* 32/32/32 utilizes 1024 bytes in the inner loop */
+  const int bk = 32;
+  const int bm = 32;
+  const int bn = 32;
 
   /* I blocks increase top to bottom on A/C matrix */
   for (i_block = 0; i_block < m/bm; i_block++)
-  //for (i_block = 0; i_block < 1; i_block++)
   {
-    fprintf(stderr, "i_block=%i\n", i_block);
 
     /* J blocks increase left to right on B/C matrix */
     for (j_block = 0; j_block < n/bn; j_block++)
-    //for (j_block = 0; j_block < 1; j_block++)
     {
       int apply_beta = 1;
-      fprintf(stderr, "apply_beta=%i\n", apply_beta);
 
       /* K blocks increase top to bottom on B matrix (and left to right on A) */
       for (k_block = 0; k_block < k/bk; k_block++)
-      //for (k_block = 0; k_block < 1; k_block++)
       {
-      fprintf(stderr, "k_block=%i\n", k_block);
         int block_row;
         int block_col;
-        fprintf(stderr, "j_block=%i\n", j_block);
 
         /* Iterate over the columns of C */
         for (block_col = 0; block_col < bn; block_col++) {
-
-          fprintf(stderr, "c_col=%i\n", block_col);
 
           /* Iterate over the rows of C */
           for (block_row = 0; block_row < bm; block_row++) {
 
             int k_iter;
             double dotprod = 0.0; /* Accumulates the sum of the dot-product */
-            fprintf(stderr, "c_block_row=%i\n", block_row);
 
             /* Iterate over column of A, row of B */
             for (k_iter = 0; k_iter < bk; k_iter++) {
               int a_index, b_index;
-              fprintf(stderr, "k_iter=%i\n", k_iter);
               a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row;
-              fprintf(stderr, "A=%0.0f (%i)\n", A[a_index], a_index);
               b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter;
-              fprintf(stderr, "B=%0.0f (%i)\n", B[b_index], b_index);
               dotprod += A[a_index] * B[b_index];
-              fprintf(stderr, "dotprod=%0.0f\n", dotprod);
             } /* k_iter */
 
             int c_index = (block_col + j_block*bn) * m + (block_row + i_block*bm);
-            fprintf(stderr, "(before) C=%0.0f (%i); %0.0f\n", C[c_index], c_index, dotprod);
             if (apply_beta)
             {
               C[c_index] = alpha*dotprod + beta * C[c_index];
@@ -204,41 +191,12 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             {
               C[c_index] = alpha*dotprod + C[c_index];
             }
-            //fprintf(stderr, "(after) alpha=%0f, beta=%0f\n", alpha, beta);
-            fprintf(stderr, "(after) C=%0.0f (%i); %0.0f\n", C[c_index], c_index, dotprod);
           } /* block_row */
         } /* block_col */
-        fputs("C =\n", stderr);
-        print_matrix(m, n, C);
         apply_beta = 0;
-        fprintf(stderr, "apply_beta=%i\n", apply_beta);
-
       }
     }
   }
-
-#ifdef NONO
-  fputs("CC =\n", stderr);
-  print_matrix(m, n, CC);
-
-  int row, col;
-
-  /* Iterate over the columns of C */
-  for (col = 0; col < n; col++) {
-
-    /* Iterate over the rows of C */
-    for (row = 0; row < m; row++) {
-
-      int c_index = (col * ldc) + row;
-      C[c_index] = CC[c_index] + (beta * C[c_index]);
-    } /* row */
-  } /* col */
-#endif
-
-  fputs("C =\n", stderr);
-  print_matrix(m, n, C);
-  printf("alpha = %f, beta = %f\n", alpha, beta);
-
 
 #endif /* USE_BLOCKING */
 
