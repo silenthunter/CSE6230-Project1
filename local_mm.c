@@ -145,7 +145,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   const int bn = 8;
   */
 
-  /* 32/32/32 utilizes 1024 bytes in the inner loop */
+  /* 32/32/32 utilizes 24K in the inner loop */
   const int bk = 32;
   const int bm = 32;
   const int bn = 32;
