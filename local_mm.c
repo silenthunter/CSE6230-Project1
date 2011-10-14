@@ -131,6 +131,10 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   int k_block;
   int i_block;
   int j_block;
+  double* CC;
+
+  /* Allocate a buffer to accumulate the C result */
+  assert(0 == posix_memalign((void**)&CC, L2_TLB_PAGE_SIZE, m*n*sizeof(double)));
 
   /* 8/16/32 utilizes 7168 bytes in the inner loop */
   /*
@@ -144,17 +148,24 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   const int bm = 8;
   const int bn = 8;
 
-  for (k_block = 0; k_block < k/bk; k_block++)
-  //for (k_block = 0; k_block < 1; k_block++)
+  /* I blocks increase top to bottom on A/C matrix */
+  for (i_block = 0; i_block < m/bm; i_block++)
+  //for (i_block = 0; i_block < 1; i_block++)
   {
-    fprintf(stderr, "k_block=%i\n", k_block);
-    for (i_block = 0; i_block < m/bm; i_block++)
-    //for (i_block = 0; i_block < 1; i_block++)
+    fprintf(stderr, "i_block=%i\n", i_block);
+
+    /* J blocks increase left to right on B/C matrix */
+    for (j_block = 0; j_block < n/bn; j_block++)
+    //for (j_block = 0; j_block < 1; j_block++)
     {
-      fprintf(stderr, "i_block=%i\n", i_block);
-      for (j_block = 0; j_block < n/bn; j_block++)
-      //for (j_block = 0; j_block < 1; j_block++)
+      int apply_beta = 1;
+      fprintf(stderr, "apply_beta=%i\n", apply_beta);
+
+      /* K blocks increase top to bottom on B matrix (and left to right on A) */
+      for (k_block = 0; k_block < k/bk; k_block++)
+      //for (k_block = 0; k_block < 1; k_block++)
       {
+      fprintf(stderr, "k_block=%i\n", k_block);
         int block_row;
         int block_col;
         fprintf(stderr, "j_block=%i\n", j_block);
@@ -185,19 +196,48 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
             int c_index = (block_col + j_block*bn) * m + (block_row + i_block*bm);
             fprintf(stderr, "(before) C=%0.0f (%i); %0.0f\n", C[c_index], c_index, dotprod);
-            C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
+            if (apply_beta)
+            {
+              C[c_index] = alpha*dotprod + beta * C[c_index];
+            }
+            else
+            {
+              C[c_index] = alpha*dotprod + C[c_index];
+            }
             //fprintf(stderr, "(after) alpha=%0f, beta=%0f\n", alpha, beta);
             fprintf(stderr, "(after) C=%0.0f (%i); %0.0f\n", C[c_index], c_index, dotprod);
           } /* block_row */
         } /* block_col */
+        fputs("C =\n", stderr);
+        print_matrix(m, n, C);
+        apply_beta = 0;
+        fprintf(stderr, "apply_beta=%i\n", apply_beta);
 
       }
     }
   }
 
+#ifdef NONO
+  fputs("CC =\n", stderr);
+  print_matrix(m, n, CC);
+
+  int row, col;
+
+  /* Iterate over the columns of C */
+  for (col = 0; col < n; col++) {
+
+    /* Iterate over the rows of C */
+    for (row = 0; row < m; row++) {
+
+      int c_index = (col * ldc) + row;
+      C[c_index] = CC[c_index] + (beta * C[c_index]);
+    } /* row */
+  } /* col */
+#endif
+
   fputs("C =\n", stderr);
   print_matrix(m, n, C);
-
+  printf("alpha = %f, beta = %f\n", alpha, beta);
 
 
 #endif /* USE_BLOCKING */
