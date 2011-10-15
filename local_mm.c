@@ -48,22 +48,38 @@
 static double* arrange_to_page(int height, int width, double *mat, int rows, int cols)
 {
   int i, j;
+  double* page = (double*)malloc(sizeof(double) * rows * cols);
 
   int blockSize = width * height;
+  int x = 0, y = 0;
+
   for(i = 0; i < rows; i++)
   {
     for(j = 0; j < cols; j++)
     {
-      int idx = i + cols * rows;
-      int blockId = idx / blockSize;
-      idx -= blockId * blockSize;
-     
-      int blockX = idx / height;
-      int blockY = idx % height;
+      int matIdx = i + j * rows;
+      page[y + x * rows] = mat[matIdx];
 
-      page[blockId * blockSize + blockX * height + blockY] = mat[idx];
+      //Move index in a block format
+      if(++y % height == height - 1 || y >= rows)
+      {
+        y -= height - 1;
+        x++;
+        if(x % width == width - 1 || x >= cols)
+        { 
+          x -= width - 1;
+          y += height;
+          if(y > rows)
+          {
+            x += width;
+            y = 0;
+          } 
+        }//endif
+      }//endif
+
     }
   }
+  return page;
 }
 
 static void print_matrix(int rows, int cols, const double *mat) {
@@ -116,6 +132,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(lda >= m);
   assert(ldb >= k);
   assert(ldc >= m);
+  arrange_to_page(2, 2, A, m, k);
 
 #ifdef USE_BLOCKING
 
@@ -161,7 +178,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
         int a_index, b_index;
         a_index = (row * lda) + k_iter; /* Compute index of A element */
         b_index = (col * ldb) + k_iter; /* Compute index of B element */
-        dotprod += b2[a_index] * B[b_index]; /* Compute product of A and B */
+        dotprod += At[a_index] * B[b_index]; /* Compute product of A and B */
       } /* k_iter */
 
       int c_index = (col * ldc) + row;
