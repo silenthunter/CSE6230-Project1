@@ -45,6 +45,46 @@
 #define MIN(a, b)   ((a < b) ? a : b)
 #define MAX(a, b)   ((a > b) ? a : b)
 
+static double* arrange_to_page(int height, int width, double *mat, int rows, int cols)
+{
+  printf("ARRANGE!\n");
+  int i, j;
+  double* page = (double*)malloc(sizeof(double) * rows * cols);
+
+  int blockSize = width * height;
+  int x = 0, y = 0;
+
+  for(i = 0; i < rows; i++)
+  {
+    for(j = 0; j < cols; j++)
+    {
+      int matIdx = i + j * rows;
+      page[y + x * rows] = mat[matIdx];
+
+      //Move index in a block format
+      if(++y % height == 0 || y >= rows)
+      {
+        y -= y>= rows ? rows % height : height;
+        x++;
+        //next row 
+        if(x % width == 0 || x >= cols)
+        { 
+          x -= x>= cols ? cols % width : width;
+          y += height;
+          //next block horiz
+          if(y >= rows)
+          {
+            x += width;
+            y = 0;
+          } 
+        }//endif
+      }//endif
+
+    }
+  }
+  return page;
+}
+
 static void print_matrix(int rows, int cols, const double *mat) {
 
   int r, c;
@@ -93,6 +133,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(lda >= m);
   assert(ldb >= k);
   assert(ldc >= m);
+  arrange_to_page(2, 2, A, m, k);
 
 #ifdef USE_BLOCKING
 
@@ -267,6 +308,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             /* Iterate over column of A, row of B */
             for (k_iter = 0; k_iter < bk; k_iter++) {
               int a_index, b_index;
+        dotprod += At[a_index] * B[b_index]; /* Compute product of A and B */
 
               /* a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row; */
               /* b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter; */
