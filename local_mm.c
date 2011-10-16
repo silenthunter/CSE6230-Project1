@@ -47,6 +47,7 @@
 
 static double* arrange_to_page(int height, int width, double *mat, int rows, int cols)
 {
+  printf("ARRANGE!\n");
   int i, j;
   double* page = (double*)malloc(sizeof(double) * rows * cols);
 
@@ -61,15 +62,17 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
       page[y + x * rows] = mat[matIdx];
 
       //Move index in a block format
-      if(++y % height == height - 1 || y >= rows)
+      if(++y % height == 0 || y >= rows)
       {
-        y -= height - 1;
+        y -= y>= rows ? rows % height : height;
         x++;
-        if(x % width == width - 1 || x >= cols)
+        //next row 
+        if(x % width == 0 || x >= cols)
         { 
-          x -= width - 1;
+          x -= x>= cols ? cols % width : width;
           y += height;
-          if(y > rows)
+          //next block horiz
+          if(y >= rows)
           {
             x += width;
             y = 0;
