@@ -308,7 +308,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             /* Iterate over column of A, row of B */
             for (k_iter = 0; k_iter < bk; k_iter++) {
               int a_index, b_index;
-        dotprod += At[a_index] * B[b_index]; /* Compute product of A and B */
 
               /* a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row; */
               /* b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter; */
