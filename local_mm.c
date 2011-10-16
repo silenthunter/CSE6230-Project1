@@ -220,11 +220,19 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /* I blocks increase top to bottom on A/C matrix */
   for (i_block = 0; i_block < m/bm; i_block++)
   {
+    int c_index_f3 = i_block*bm;
 
     /* J blocks increase left to right on B/C matrix */
     for (j_block = 0; j_block < n/bn; j_block++)
     {
       int apply_beta = 1;
+      int a_index_f1 = i_block*bm;
+
+      int b_index_f2 = j_block*bn*k;
+
+      int c_index_f2 = j_block*bn*m;
+      int c_index_f2f3 = c_index_f2 + c_index_f3;
+
       // puts("\n*** here ***\n");
 
       /* K blocks increase top to bottom on B matrix (and left to right on A) */
@@ -233,8 +241,20 @@ void local_mm(const int m, const int n, const int k, const double alpha,
         int block_row;
         int block_col;
 
+        int a_index_f2 = k_block*bk*m;
+        int a_index_f1f2 = a_index_f1 + a_index_f2;
+
+        int b_index_f3 = k_block*bk;
+        int b_index_f2f3 = b_index_f2 + b_index_f3;
+
         /* Iterate over the columns of C */
         for (block_col = 0; block_col < bn; block_col++) {
+
+          int b_index_f1 = block_col*k;
+          int b_index_f1f2f3 = b_index_f1 + b_index_f2f3;
+
+          int c_index_f1 = block_col*m;
+          int c_index_f1f2f3 = c_index_f1 + c_index_f2f3;
 
           /* Iterate over the rows of C */
           for (block_row = 0; block_row < bm; block_row++) {
@@ -242,15 +262,21 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             int k_iter;
             double dotprod = 0.0; /* Accumulates the sum of the dot-product */
 
+            int a_index_f1f2f3 = a_index_f1f2 + block_row;
+
             /* Iterate over column of A, row of B */
             for (k_iter = 0; k_iter < bk; k_iter++) {
               int a_index, b_index;
-              a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row;
-              b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter;
+
+              /* a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row; */
+              /* b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter; */
+              a_index = a_index_f1f2f3 + k_iter*m;
+              b_index = b_index_f1f2f3 + k_iter;
               dotprod += A[a_index] * B[b_index];
             } /* k_iter */
 
-            int c_index = (block_col + j_block*bn) * m + (block_row + i_block*bm);
+            /* int c_index = block_col*m + j_block*bn*m + (block_row + i_block*bm); */
+            int c_index = c_index_f1f2f3 + block_row;
             //fprintf(stderr, "(before) C=%f, c_index=%i, dotprod=%f, apply_beta=%i\n", C[c_index], c_index, dotprod, apply_beta);
             if (apply_beta)
             {
