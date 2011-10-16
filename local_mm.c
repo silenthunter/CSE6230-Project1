@@ -166,9 +166,17 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /* 4/64/32 - 19456 bytes 0.91s */
   /* 4/32/64 - 19456 bytes 1.04s */
 
+  /* checked values */
   int bk = 4;
   int bm = 128;
   int bn = 4;
+
+  /* test values */
+  /*
+  int bk = 4;
+  int bm = 4;
+  int bn = 4;
+  */
 
   /* 4/8/8 utilizes 1024 bytes in the inner loop 1.03s */
   /*
@@ -200,8 +208,14 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
   /* Check for tiny matrices */
   bk = MIN(k, bk);
-  bm = MIN(k, bm);
-  bn = MIN(k, bn);
+  bm = MIN(m, bm);
+  bn = MIN(n, bn);
+
+  //fprintf(stderr, "A=\n");
+  //print_matrix(m, k, A);
+
+  //fprintf(stderr, "B=\n");
+  //print_matrix(k, n, B);
 
   /* I blocks increase top to bottom on A/C matrix */
   for (i_block = 0; i_block < m/bm; i_block++)
@@ -211,6 +225,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
     for (j_block = 0; j_block < n/bn; j_block++)
     {
       int apply_beta = 1;
+      // puts("\n*** here ***\n");
 
       /* K blocks increase top to bottom on B matrix (and left to right on A) */
       for (k_block = 0; k_block < k/bk; k_block++)
@@ -236,6 +251,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             } /* k_iter */
 
             int c_index = (block_col + j_block*bn) * m + (block_row + i_block*bm);
+            //fprintf(stderr, "(before) C=%f, c_index=%i, dotprod=%f, apply_beta=%i\n", C[c_index], c_index, dotprod, apply_beta);
             if (apply_beta)
             {
               C[c_index] = alpha*dotprod + beta * C[c_index];
@@ -244,12 +260,16 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             {
               C[c_index] = alpha*dotprod + C[c_index];
             }
+            //fprintf(stderr, "(after) C=%f, c_index=%i, dotprod=%f\n", C[c_index], c_index, dotprod);
           } /* block_row */
         } /* block_col */
         apply_beta = 0;
       }
     }
   }
+
+  //fprintf(stderr, "C=\n");
+  //print_matrix(m, n, C);
 
 #endif /* USE_BLOCKING */
 
