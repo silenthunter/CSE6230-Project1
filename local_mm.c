@@ -166,9 +166,9 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /* 4/64/32 - 19456 bytes 0.91s */
   /* 4/32/64 - 19456 bytes 1.04s */
 
-  const int bk = 4;
-  const int bm = 128;
-  const int bn = 4;
+  int bk = 4;
+  int bm = 128;
+  int bn = 4;
 
   /* 4/8/8 utilizes 1024 bytes in the inner loop 1.03s */
   /*
@@ -197,6 +197,11 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   const int bm = 8;
   const int bn = 32;
   */
+
+  /* Check for tiny matrices */
+  bk = MIN(k, bk);
+  bm = MIN(k, bm);
+  bn = MIN(k, bn);
 
   /* I blocks increase top to bottom on A/C matrix */
   for (i_block = 0; i_block < m/bm; i_block++)
