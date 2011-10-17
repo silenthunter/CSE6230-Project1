@@ -147,33 +147,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
 #ifdef USE_BLOCKING
 
-#ifdef NONO
-  int i, j;
-  double* At; /* A transposed, aligned to L2 TLB page */
-
-  /* Work on a portion of A */
-  const int num_a_blocks = MAX(1, sizeof(double)*m*k / L2_CACHE_SIZE / 2);
-  int a_block_idx;
-  const int num_at_rows = m / num_a_blocks;
-
-  assert(0 == posix_memalign((void**)&At, L2_TLB_PAGE_SIZE, L2_CACHE_SIZE));
-
-  for (a_block_idx = 0; a_block_idx < num_a_blocks; a_block_idx++)
-  {
-    int a_row;
-    int a_col;
-
-    /* Transpose A and preload L2 cache */
-    for (a_row = 0; a_row < m / num_a_blocks; a_row++)
-    {
-      for (a_col = 0; a_col < k; a_col++)
-      {
-        At[a_col + a_row*num_at_rows] = A[a_row + a_col*m];
-        assert(a_col + a_row*num_at_rows < m*k);
-      }
-    }
-#endif
-
   int k_block;
   int i_block;
   int j_block;
@@ -271,7 +244,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
       }
     }
   }
-
 #endif /* USE_BLOCKING */
 
 #ifdef USE_TLB
