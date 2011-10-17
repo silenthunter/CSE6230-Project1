@@ -137,13 +137,13 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(ldb >= k);
   assert(ldc >= m);
 
-  fprintf(stderr, "A=\n");
-  print_matrix(m, k, A);
+  //fprintf(stderr, "A=\n");
+  //print_matrix(m, k, A);
 
-  arrange_to_page(2, 2, A, m, k);
+  //arrange_to_page(2, 2, A, m, k);
 
-  fprintf(stderr, "A=\n");
-  print_matrix(m, k, A);
+  //fprintf(stderr, "A=\n");
+  //print_matrix(m, k, A);
 
 #ifdef USE_BLOCKING
 
@@ -182,13 +182,20 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /*
   int bk = 8;
   int bm = 64;
-  int bn = 16;
+  int bn = 8;
   */
 
   /* L2 optimized values */
+  /*
   int bk = 8;
   int bm = 256;
   int bn = 16;
+  */
+
+  /* L3 optimized values */
+  int bk = 8;
+  int bm = 512;
+  int bn = 8;
 
   /* Check for tiny matrices */
   bk = MIN(k, bk);
