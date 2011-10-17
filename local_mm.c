@@ -133,7 +133,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(lda >= m);
   assert(ldb >= k);
   assert(ldc >= m);
-  arrange_to_page(2, 2, A, m, k);
+  //arrange_to_page(2, 2, A, m, k);
 
 #ifdef USE_BLOCKING
 
@@ -179,6 +179,8 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   const int bn = 32;
   */
 
+  /* Old timings */
+
   /* 512/1/1 - 8200 bytes 2.87s */
 
   /* 16/32/8 - 7168 bytes 1.6s */
@@ -207,10 +209,42 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /* 4/64/32 - 19456 bytes 0.91s */
   /* 4/32/64 - 19456 bytes 1.04s */
 
+
+  /* New timings */
+
+  /* 512/1/1 - 8200 bytes */
+
+  /* 16/32/8 - 7168 bytes */
+  /* 32/16/8 - 7168 bytes */
+  /* 8/16/32 - 7168 bytes */
+  /* 8/32/16 - 7168 bytes */
+  /* 16/8/32 - 7168 bytes */
+
+  /* 8/8/64 - 8704 bytes */
+  /* 8/64/8 - 8704 bytes 1.70s */
+
+  /* 2/2/256 - 8224 bytes */
+  /* 4/128/4 - 8320 bytes 1.88s */
+  /* 2/256/2 - 8224 bytes */
+  /* 1/512/1 - 8200 bytes */
+
+  /* 1/64/16 - 8832 bytes */
+  /* 2/64/16 - 9472 bytes */
+
+  /* 4/32/32 - 10240 bytes 1.98s */
+
+  /* 2/128/8 - 10368 bytes */
+
+  /* 8/64/16 - 13312 bytes 1.66s */
+
+  /* 4/64/32 - 19456 bytes 1.91s */
+  /* 4/32/64 - 19456 bytes */
+
+
   /* checked values */
-  int bk = 4;
-  int bm = 128;
-  int bn = 4;
+  int bk = 8;
+  int bm = 64;
+  int bn = 16;
 
   /* test values */
   /*
@@ -261,18 +295,10 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /* I blocks increase top to bottom on A/C matrix */
   for (i_block = 0; i_block < m/bm + 1; i_block++)
   {
-    int c_index_f3 = i_block*bm;
-
     /* J blocks increase left to right on B/C matrix */
     for (j_block = 0; j_block < n/bn + 1; j_block++)
     {
       int apply_beta = 1;
-      int a_index_f1 = i_block*bm;
-
-      int b_index_f2 = j_block*bn*k;
-
-      int c_index_f2 = j_block*bn*m;
-      int c_index_f2f3 = c_index_f2 + c_index_f3;
 
       // puts("\n*** here ***\n");
 
@@ -282,20 +308,8 @@ void local_mm(const int m, const int n, const int k, const double alpha,
         int block_row;
         int block_col;
 
-        int a_index_f2 = k_block*bk*m;
-        int a_index_f1f2 = a_index_f1 + a_index_f2;
-
-        int b_index_f3 = k_block*bk;
-        int b_index_f2f3 = b_index_f2 + b_index_f3;
-
         /* Iterate over the columns of C */
         for (block_col = 0; block_col < bn; block_col++) {
-
-          int b_index_f1 = block_col*k;
-          int b_index_f1f2f3 = b_index_f1 + b_index_f2f3;
-
-          int c_index_f1 = block_col*m;
-          int c_index_f1f2f3 = c_index_f1 + c_index_f2f3;
 
           /* Check for non power of 2 matrices being complete */
           if (j_block*bn + block_col >= n)
@@ -315,8 +329,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
               break;
             }
 
-            int a_index_f1f2f3 = a_index_f1f2 + block_row;
-
             /* Iterate over column of A, row of B */
             for (k_iter = 0; k_iter < bk; k_iter++) {
               int a_index, b_index;
@@ -327,17 +339,14 @@ void local_mm(const int m, const int n, const int k, const double alpha,
                 break;
               }
 
-              /* a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row; */
-              a_index = a_index_f1f2f3 + k_iter*m;
+              a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row;
 
-              /* b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter; */
-              b_index = b_index_f1f2f3 + k_iter;
+              b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter;
 
               dotprod += A[a_index] * B[b_index];
             } /* k_iter */
 
-            /* int c_index = block_col*m + j_block*bn*m + (block_row + i_block*bm); */
-            int c_index = c_index_f1f2f3 + block_row;
+            int c_index = block_col*m + j_block*bn*m + (block_row + i_block*bm);
 
             //fprintf(stderr, "(before) C=%f, c_index=%i, dotprod=%f, apply_beta=%i\n", C[c_index], c_index, dotprod, apply_beta);
             if (apply_beta)
