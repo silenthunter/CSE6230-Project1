@@ -35,7 +35,7 @@ LINK_MKL_GCC = -L/opt/intel/Compiler/11.1/059/mkl/lib/em64t/ \
 CC = mpicc
 CFLAGS_OPENMP = -O -Wall -Wextra -lm $(LINK_OPENMP_GCC)
 CFLAGS_MKL = -O -Wall -Wextra -lm $(LINK_MKL_GCC)
-CFLAGS = -g -O -Wall -Wextra -lm
+CFLAGS = -g -O3 -Wall -Wextra -lm
 
 FC = mpif90
 FFLAGS = -O $(MKL_GCC) $(OPENMP_GCC)
