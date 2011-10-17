@@ -49,7 +49,10 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
 {
   printf("ARRANGE!\n");
   int i, j;
-  double* page = (double*)malloc(sizeof(double) * rows * cols);
+  double* page;
+
+  page = (double*)malloc(sizeof(double) * rows * cols);
+  //posix_memalign((void**)&page, L2_TLB_PAGE_SIZE, sizeof(double) * rows * cols);
 
   int blockSize = width * height;
   int x = 0, y = 0;
@@ -66,9 +69,9 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
       {
         y -= y>= rows ? rows % height : height;
         x++;
-        //next row 
+        //next row
         if(x % width == 0 || x >= cols)
-        { 
+        {
           x -= x>= cols ? cols % width : width;
           y += height;
           //next block horiz
@@ -76,7 +79,7 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
           {
             x += width;
             y = 0;
-          } 
+          }
         }//endif
       }//endif
 
@@ -133,7 +136,14 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   assert(lda >= m);
   assert(ldb >= k);
   assert(ldc >= m);
-  //arrange_to_page(2, 2, A, m, k);
+
+  fprintf(stderr, "A=\n");
+  print_matrix(m, k, A);
+
+  arrange_to_page(2, 2, A, m, k);
+
+  fprintf(stderr, "A=\n");
+  print_matrix(m, k, A);
 
 #ifdef USE_BLOCKING
 
