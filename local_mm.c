@@ -240,6 +240,8 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   /* 4/64/32 - 19456 bytes 1.91s */
   /* 4/32/64 - 19456 bytes */
 
+  /* 64/8/16 - bytes 2.44s */
+
 
   /* checked values */
   int bk = 8;
