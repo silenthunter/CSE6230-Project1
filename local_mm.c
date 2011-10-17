@@ -167,121 +167,20 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   int k_block;
   int i_block;
   int j_block;
-  double* CC;
 
-  /* Allocate a buffer to accumulate the C result */
-  assert(0 == posix_memalign((void**)&CC, L2_TLB_PAGE_SIZE, m*n*sizeof(double)));
-
-  /* 8/16/32 utilizes 7168 bytes in the inner loop 0.99s */
+  /* L1 optimized values */
   /*
-  const int bk = 8;
-  const int bm = 16;
-  const int bn = 32;
-  */
-
-  /* Old timings */
-
-  /* 512/1/1 - 8200 bytes 2.87s */
-
-  /* 16/32/8 - 7168 bytes 1.6s */
-  /* 32/16/8 - 7168 bytes 2.0s */
-  /* 8/16/32 - 7168 bytes 0.97s */
-  /* 8/32/16 - 7168 bytes 0.93s */
-  /* 16/8/32 - 7168 bytes 1.8s */
-
-  /* 8/8/64 - 8704 bytes 1.15s */
-  /* 8/64/8 - 8704 bytes 0.94s */
-
-  /* 2/2/256 - 8224 bytes 3.1s */
-  /* 4/128/4 - 8320 bytes 0.88s */
-  /* 2/256/2 - 8224 bytes 1.13s */
-  /* 1/512/1 - 8200 bytes 1.5s */
-
-  /* 1/64/16 - 8832 bytes 1.56s */
-  /* 2/64/16 - 9472 bytes 1.05s */
-
-  /* 4/32/32 - 10240 bytes 0.89s */
-
-  /* 2/128/8 - 10368 bytes 1.13s */
-
-  /* 8/64/16 - 13312 bytes 0.92s */
-
-  /* 4/64/32 - 19456 bytes 0.91s */
-  /* 4/32/64 - 19456 bytes 1.04s */
-
-
-  /* New timings */
-
-  /* 512/1/1 - 8200 bytes */
-
-  /* 16/32/8 - 7168 bytes */
-  /* 32/16/8 - 7168 bytes */
-  /* 8/16/32 - 7168 bytes */
-  /* 8/32/16 - 7168 bytes */
-  /* 16/8/32 - 7168 bytes */
-
-  /* 8/8/64 - 8704 bytes */
-  /* 8/64/8 - 8704 bytes 1.70s */
-
-  /* 2/2/256 - 8224 bytes */
-  /* 4/128/4 - 8320 bytes 1.88s */
-  /* 2/256/2 - 8224 bytes */
-  /* 1/512/1 - 8200 bytes */
-
-  /* 1/64/16 - 8832 bytes */
-  /* 2/64/16 - 9472 bytes */
-
-  /* 4/32/32 - 10240 bytes 1.98s */
-
-  /* 2/128/8 - 10368 bytes */
-
-  /* 8/64/16 - 13312 bytes 1.66s */
-
-  /* 4/64/32 - 19456 bytes 1.91s */
-  /* 4/32/64 - 19456 bytes */
-
-  /* 64/8/16 - bytes 2.44s */
-
-
-  /* checked values */
   int bk = 8;
   int bm = 64;
   int bn = 16;
-
-  /* test values */
-  /*
-  int bk = 4;
-  int bm = 4;
-  int bn = 4;
   */
 
-  /* 4/8/8 utilizes 1024 bytes in the inner loop 1.03s */
-  /*
-  const int bk = 4;
-  const int bm = 8;
-  const int bn = 8;
-  */
+  /* [172032, (64, 256, 16)] */
 
-  /* 32/32/32 utilizes 24K in the inner loop 1.95s */
-  /*
-  const int bk = 32;
-  const int bm = 32;
-  const int bn = 32;
-  */
-
-  /* 64/16/32 utilizes 28K in the inner loop 2.34s */
-  /*
-  const int bk = 64;
-  const int bm = 16;
-  const int bn = 32;
-  */
-
-  /* 64/8/32 utilizes 22.5K in the inner loop 2.39s */
-  /*
-  const int bk = 64;
-  const int bm = 8;
-  const int bn = 32;
-  */
+  /* L2 optimized values */
+  int bk = 8;
+  int bm = 256;
+  int bn = 16;
 
   /* Check for tiny matrices */
   bk = MIN(k, bk);
