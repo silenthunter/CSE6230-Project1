@@ -30,7 +30,7 @@
 # include <string.h>
 #endif
 
-#if defined(USE_OPEN_MP)
+#if defined(USE_OPEN_MP) || defined(USE_BLOCKING)
 # include <omp.h>
 #endif
 
@@ -147,9 +147,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
 #ifdef USE_BLOCKING
 
-  int k_block;
   int i_block;
-  int j_block;
 
   /* L1 optimized values */
   /*
@@ -175,12 +173,18 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   bm = MIN(m, bm);
   bn = MIN(n, bn);
 
+//# pragma omp parallel for private(i_block), schedule(static)
+# pragma omp parallel for private(i_block)
+
   /* I blocks increase top to bottom on A/C matrix */
   for (i_block = 0; i_block < m/bm + 1; i_block++)
   {
+    int j_block;
+
     /* J blocks increase left to right on B/C matrix */
     for (j_block = 0; j_block < n/bn + 1; j_block++)
     {
+      int k_block;
       int apply_beta = 1;
 
       // puts("\n*** here ***\n");

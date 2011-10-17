@@ -12,7 +12,7 @@ all:
 	@echo "    time_mm_original : Build program to time local_mm (original)"
 	@echo "      time_mm_openmp : Build program to time local_mm (open MP)"
 	@echo "         time_mm_mkl : Build program to time local_mm (Intel MKL)"
-	@echo "    time_mm_blocking : Build program to time local_mm (L1/L2 blocking technique)"
+	@echo "    time_mm_blocking : Build program to time local_mm (L1/L2/L3 blocking/openmp technique)"
 	@echo "         time_mm_tlb : Build program to time local_mm (TLB considerations technique)"
 	@echo "          time_summa : Build program to time summa"
 	@echo "    run--unittest_mm : Submit unittest_mm job"
@@ -55,7 +55,7 @@ local_mm_mkl.o : local_mm.c local_mm.f90 local_mm.h
 	$(CC) $(CFLAGS_MKL) -DUSE_MKL -o $@ -c local_mm.c
 
 local_mm_blocking.o : local_mm.c local_mm.f90 local_mm.h
-	$(CC) $(CFLAGS) -DUSE_BLOCKING -o $@ -c local_mm.c
+	$(CC) $(CFLAGS_OPENMP) -DUSE_BLOCKING -o $@ -c local_mm.c
 
 local_mm_tlb.o : local_mm.c local_mm.f90 local_mm.h
 	$(CC) $(CFLAGS) -DUSE_TLB -o $@ -c local_mm.c
@@ -73,7 +73,7 @@ unittest_mm_mkl : unittest_mm.c matrix_utils.o local_mm_mkl.o
 	$(CC) $(CFLAGS_MKL) -o $@ $^
 
 unittest_mm_blocking : unittest_mm.c matrix_utils.o local_mm_blocking.o
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS_OPENMP) -o $@ $^
 
 unittest_mm_tlb : unittest_mm.c matrix_utils.o local_mm_tlb.o
 	$(CC) $(CFLAGS) -o $@ $^
@@ -88,7 +88,7 @@ time_mm_mkl : time_mm.c matrix_utils.o local_mm_mkl.o
 	$(CC) $(CFLAGS_MKL) -o $@ $^
 
 time_mm_blocking : time_mm.c matrix_utils.o local_mm_blocking.o
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS_OPENMP) -o $@ $^
 
 time_mm_tlb : time_mm.c matrix_utils.o local_mm_tlb.o
 	$(CC) $(CFLAGS) -o $@ $^
@@ -139,6 +139,7 @@ local_mm_wrapper.o : local_mm_wrapper.c
 clean : clean-pbs
 	rm -f unittest_mm unittest_summa time_summa
 	rm -f time_mm_mkl time_mm_openmp time_mm_original time_mm_blocking
+	rm -f time_mm_tlb unittest_mm_tlb
 	rm -f unittest_mm_original unittest_mm_mkl unittest_mm_openmp unittest_mm_blocking
 	rm -f *.o
 	rm -f turnin.tar.gz
