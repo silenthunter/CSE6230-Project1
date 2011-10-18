@@ -162,6 +162,10 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   int apply_beta = 1;
   int k_block;
  
+  //Apply beta
+  int i;
+  for(i = 0; i < n * m; i++)
+    C[i] = beta * C[i];
 
 //# pragma omp parallel for private(i_block), schedule(static)
   # pragma omp parallel for private (k_block), firstprivate(apply_beta)
@@ -231,14 +235,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             
             #pragma omp critical
             {
-              if (apply_beta)
-              {
-                C[c_index] = alpha*dotprod + beta * C[c_index];
-              }
-              else
-              {
                 C[c_index] = alpha*dotprod + C[c_index];
-              }
             }
           } /* block_row */
         } /* block_col */
