@@ -60,8 +60,8 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
   {
     for(j = 0; j < cols; j++)
     {
-      int matIdx = i + j * rows;
-      page[x + y * rows] = mat[matIdx];
+      int matIdx = j + i * rows;
+      page[y + x * rows] = mat[matIdx];
 
       //Move index in a block format
       if(++y % height == 0 || y >= rows)
@@ -180,8 +180,13 @@ void local_mm(const int m, const int n, const int k, const double alpha,
     {
       int j_block;
       int pageSize = bk * bm;
-      //double* page = &aPaged[pageSize * i_block + pageSize * k_block * m/bm];
-      double* page = &aPaged[pageSize * (k/bk * i_block + k_block)];
+      int addr = pageSize * (k/bk * i_block + k_block);
+      if(m % bm != 0) addr -= k_block * (bm - m % bm) * bk;
+      if(k_block == k/bk && k % bk != 0)
+      {
+        addr -= i_block * (bk - k % bk) * bm;
+      }
+      double* page = &aPaged[addr];
 
       /* J blocks increase left to right on B/C matrix */
       for (j_block = 0; j_block < n/bn + 1; j_block++)
