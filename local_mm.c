@@ -45,9 +45,9 @@
 #define MIN(a, b)   ((a < b) ? a : b)
 #define MAX(a, b)   ((a > b) ? a : b)
 
-static double* arrange_to_page(int height, int width, double *mat, int rows, int cols)
+static double* arrange_to_page(int height, int width, const double *mat, int rows, int cols)
 {
-  //printf("ARRANGE!\n");
+//  printf("ARRANGE!\n");
   int i, j;
   double* page;
 
@@ -163,8 +163,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   int apply_beta = 1;
   int k_block;
 
-//# pragma omp parallel for private(i_block), schedule(static)
-# pragma omp parallel for private(k_block, apply_beta)
+//# pragma omp parallel for private(k_block, apply_beta) // shared(aPaged)
 
   /* K blocks increase top to bottom on B matrix (and left to right on A) */
   for (k_block = 0; k_block < k/bk; k_block++)
