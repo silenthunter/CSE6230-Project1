@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 
   if (rank == 0) {
     //random_multiply(8192, 8192, 8192, 1);
-    random_multiply(matrix_size, matrix_size, matrix_size, NUM_TRIALS);
+    random_multiply(matrix_size, matrix_size, matrix_size, 1);
   }
 
   MPI_Finalize();
