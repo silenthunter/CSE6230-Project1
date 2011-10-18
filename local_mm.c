@@ -161,18 +161,10 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
   int apply_beta = 1;
   int k_block;
- 
-  //Apply beta
-  int i;
-  for(i = 0; i < n * m; i++)
-    C[i] = beta * C[i];
-
-//# pragma omp parallel for private(i_block), schedule(static)
-  # pragma omp parallel for private (k_block), firstprivate(apply_beta)
 
   /* K blocks increase top to bottom on B matrix (and left to right on A) */
   for (k_block = 0; k_block < k/bk + 1; k_block++)
-  { 
+  {
     int i_block;
 
     /* I blocks increase top to bottom on A/C matrix */
@@ -188,6 +180,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
       }
       double* page = &aPaged[addr];
 
+# pragma omp parallel for private (j_block)
       /* J blocks increase left to right on B/C matrix */
       for (j_block = 0; j_block < n/bn + 1; j_block++)
       {
@@ -202,7 +195,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
           /* Check for non power of 2 matrices being complete */
           if (j_block*bn + block_col >= n)
-          {  
+          {
             break;
           }
 
@@ -237,10 +230,13 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             } /* k_iter */
 
             int c_index = block_col*m + j_block*bn*m + (block_row + i_block*bm);
-            
-            #pragma omp critical
+            if (apply_beta)
             {
-                C[c_index] = alpha*dotprod + C[c_index];
+              C[c_index] = alpha*dotprod + beta * C[c_index];
+            }
+            else
+            {
+              C[c_index] = alpha*dotprod + C[c_index];
             }
           } /* block_row */
         } /* block_col */
