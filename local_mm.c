@@ -47,7 +47,6 @@
 
 static double* arrange_to_page(int height, int width, double *mat, int rows, int cols)
 {
-  printf("ARRANGE!\n");
   int i, j;
   double* page;
 
@@ -168,12 +167,12 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   # pragma omp parallel for private (k_block), firstprivate(apply_beta)
 
   /* K blocks increase top to bottom on B matrix (and left to right on A) */
-  for (k_block = 0; k_block < k/bk; k_block++)
+  for (k_block = 0; k_block < k/bk + 1; k_block++)
   { 
     int i_block;
 
     /* I blocks increase top to bottom on A/C matrix */
-    for (i_block = 0; i_block < m/bm; i_block++)
+    for (i_block = 0; i_block < m/bm + 1; i_block++)
     {
       int j_block;
       int pageSize = bk * bm;
@@ -181,7 +180,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
       double* page = &aPaged[pageSize * (k/bk * i_block + k_block)];
 
       /* J blocks increase left to right on B/C matrix */
-      for (j_block = 0; j_block < n/bn; j_block++)
+      for (j_block = 0; j_block < n/bn + 1; j_block++)
       {
 
       // puts("\n*** here ***\n");
