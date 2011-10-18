@@ -67,12 +67,12 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
       //Move index in a block format
       if(++y % height == 0 || y >= rows)
       {
-        y -= y>= rows ? rows % height : height;
+        y -= y> rows ? rows % height : height;
         x++;
         //next row
         if(x % width == 0 || x >= cols)
         {
-          x -= x>= cols ? cols % width : width;
+          x -= x> cols ? cols % width : width;
           y += height;
           //next block horiz
           if(y >= rows)
@@ -140,7 +140,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   //fprintf(stderr, "A=\n");
   //print_matrix(m, k, A);
 
-  //arrange_to_page(2, 2, A, m, k);
+  arrange_to_page(2, 2, A, m, k);
 
   //fprintf(stderr, "A=\n");
   //print_matrix(m, k, A);
