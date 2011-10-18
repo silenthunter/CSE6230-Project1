@@ -140,14 +140,12 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   //fprintf(stderr, "A=\n");
   //print_matrix(m, k, A);
 
-  arrange_to_page(2, 2, A, m, k);
+  //arrange_to_page(2, 2, A, m, k);
 
   //fprintf(stderr, "A=\n");
   //print_matrix(m, k, A);
 
 #ifdef USE_BLOCKING
-
-  int i_block;
 
   /* L1 optimized values */
   /*
@@ -173,25 +171,28 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   bm = MIN(m, bm);
   bn = MIN(n, bn);
 
+  int apply_beta = 1;
+  int k_block;
+
 //# pragma omp parallel for private(i_block), schedule(static)
-# pragma omp parallel for private(i_block)
+//# pragma omp parallel for private(i_block)
 
-  /* I blocks increase top to bottom on A/C matrix */
-  for (i_block = 0; i_block < m/bm + 1; i_block++)
+  /* K blocks increase top to bottom on B matrix (and left to right on A) */
+  for (k_block = 0; k_block < k/bk + 1; k_block++)
   {
-    int j_block;
+    int i_block;
 
-    /* J blocks increase left to right on B/C matrix */
-    for (j_block = 0; j_block < n/bn + 1; j_block++)
+    /* I blocks increase top to bottom on A/C matrix */
+    for (i_block = 0; i_block < m/bm + 1; i_block++)
     {
-      int k_block;
-      int apply_beta = 1;
+      int j_block;
+
+      /* J blocks increase left to right on B/C matrix */
+      for (j_block = 0; j_block < n/bn + 1; j_block++)
+      {
 
       // puts("\n*** here ***\n");
 
-      /* K blocks increase top to bottom on B matrix (and left to right on A) */
-      for (k_block = 0; k_block < k/bk + 1; k_block++)
-      {
         int block_row;
         int block_col;
 
@@ -244,10 +245,13 @@ void local_mm(const int m, const int n, const int k, const double alpha,
             }
           } /* block_row */
         } /* block_col */
-        apply_beta = 0;
       }
     }
+    apply_beta = 0;
   }
+
+  //fprintf(stderr, "C=\n");
+  //print_matrix(m, n, C);
 #endif /* USE_BLOCKING */
 
 #ifdef USE_TLB
