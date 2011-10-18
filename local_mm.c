@@ -147,24 +147,9 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
 #ifdef USE_BLOCKING
 
-  /* L1 optimized values */
-  /*
   int bk = 8;
-  int bm = 64;
-  int bn = 8;
-  */
-
-  /* L2 optimized values */
-  /*
-  int bk = 8;
-  int bm = 256;
+  int bm = 4096;
   int bn = 16;
-  */
-
-  /* L3 optimized values */
-  int bk = 8;
-  int bm = 512;
-  int bn = 8;
 
   /* Check for tiny matrices */
   bk = MIN(k, bk);
