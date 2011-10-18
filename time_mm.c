@@ -58,15 +58,10 @@ int main(int argc, char *argv[]) {
   int np = 0;
   char hostname[MPI_MAX_PROCESSOR_NAME + 1];
   int namelen = 0;
-  int matrix_size;
+  int matrix_size = 999;
 
-  if (argc == 1)
-  {
-    printf("New usage: %s SQUARE_MATRIX_SIZE\n", argv[0]);
-    exit(1);
-  }
-
-  matrix_size = atoi(argv[1]);
+  if (argc > 1)
+    matrix_size = atoi(argv[1]);
 
   MPI_Init(&argc, &argv); /* starts MPI */
   MPI_Comm_rank(MPI_COMM_WORLD, &rank); /* Get process id */
@@ -82,8 +77,10 @@ int main(int argc, char *argv[]) {
   }
 
   if (rank == 0) {
-    //random_multiply(8192, 8192, 8192, 1);
-    random_multiply(matrix_size, matrix_size, matrix_size, 1);
+    if (argc == 1)
+      random_multiply(1024, 1024, 1024, NUM_TRIALS);
+    else
+      random_multiply(matrix_size, matrix_size, matrix_size, NUM_TRIALS);
   }
 
   MPI_Finalize();
