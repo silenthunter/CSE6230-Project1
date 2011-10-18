@@ -62,7 +62,7 @@ static double* arrange_to_page(int height, int width, double *mat, int rows, int
     for(j = 0; j < cols; j++)
     {
       int matIdx = i + j * rows;
-      page[y + x * rows] = mat[matIdx];
+      page[x + y * rows] = mat[matIdx];
 
       //Move index in a block format
       if(++y % height == 0 || y >= rows)
@@ -140,7 +140,6 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   //fprintf(stderr, "A=\n");
   //print_matrix(m, k, A);
 
-  //arrange_to_page(2, 2, A, m, k);
 
   //fprintf(stderr, "A=\n");
   //print_matrix(m, k, A);
@@ -150,30 +149,39 @@ void local_mm(const int m, const int n, const int k, const double alpha,
   int bk = 8;
   int bm = 4096;
   int bn = 16;
-
+  
   /* Check for tiny matrices */
   bk = MIN(k, bk);
   bm = MIN(m, bm);
   bn = MIN(n, bn);
 
+  double* aPaged = arrange_to_page(bm, bk, A, m, k);
+  //print_matrix(m, k, A);
+  //printf("-------------------\n");
+  //print_matrix(m, k, aPaged);
+
   int apply_beta = 1;
   int k_block;
+ 
 
 //# pragma omp parallel for private(i_block), schedule(static)
-  # pragma omp parallel for private(k_block, apply_beta)
+  # pragma omp parallel for private (k_block), firstprivate(apply_beta)
 
   /* K blocks increase top to bottom on B matrix (and left to right on A) */
-  for (k_block = 0; k_block < k/bk + 1; k_block++)
-  {
+  for (k_block = 0; k_block < k/bk; k_block++)
+  { 
     int i_block;
 
     /* I blocks increase top to bottom on A/C matrix */
-    for (i_block = 0; i_block < m/bm + 1; i_block++)
+    for (i_block = 0; i_block < m/bm; i_block++)
     {
       int j_block;
+      int pageSize = bk * bm;
+      //double* page = &aPaged[pageSize * i_block + pageSize * k_block * m/bm];
+      double* page = &aPaged[pageSize * (k/bk * i_block + k_block)];
 
       /* J blocks increase left to right on B/C matrix */
-      for (j_block = 0; j_block < n/bn + 1; j_block++)
+      for (j_block = 0; j_block < n/bn; j_block++)
       {
 
       // puts("\n*** here ***\n");
@@ -186,7 +194,7 @@ void local_mm(const int m, const int n, const int k, const double alpha,
 
           /* Check for non power of 2 matrices being complete */
           if (j_block*bn + block_col >= n)
-          {
+          {  
             break;
           }
 
@@ -212,21 +220,26 @@ void local_mm(const int m, const int n, const int k, const double alpha,
                 break;
               }
 
-              a_index = k_iter*m + (i_block*bm) + (k_block*bk*m) + block_row;
+              a_index = k_iter * bm + block_row;
+              //printf("%d\n", a_index);
 
               b_index = block_col*k + (j_block*bn*k) + (k_block*bk) + k_iter;
 
-              dotprod += A[a_index] * B[b_index];
+              dotprod += page[a_index] * B[b_index];
             } /* k_iter */
 
             int c_index = block_col*m + j_block*bn*m + (block_row + i_block*bm);
-            if (apply_beta)
+            
+            #pragma omp critical
             {
-              C[c_index] = alpha*dotprod + beta * C[c_index];
-            }
-            else
-            {
-              C[c_index] = alpha*dotprod + C[c_index];
+              if (apply_beta)
+              {
+                C[c_index] = alpha*dotprod + beta * C[c_index];
+              }
+              else
+              {
+                C[c_index] = alpha*dotprod + C[c_index];
+              }
             }
           } /* block_row */
         } /* block_col */
@@ -234,6 +247,8 @@ void local_mm(const int m, const int n, const int k, const double alpha,
     }
     apply_beta = 0;
   }
+
+  free(aPaged);
 
   //fprintf(stderr, "C=\n");
   //print_matrix(m, n, C);
