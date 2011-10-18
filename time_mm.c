@@ -10,6 +10,7 @@
 #include <time.h>
 #include <math.h>
 #include <mpi.h>
+#include <omp.h>
 
 #include "matrix_utils.h"
 #include "local_mm.h"
@@ -57,18 +58,34 @@ int main(int argc, char *argv[]) {
   int np = 0;
   char hostname[MPI_MAX_PROCESSOR_NAME + 1];
   int namelen = 0;
+  int matrix_size;
+
+  if (argc == 1)
+  {
+    printf("New usage: %s SQUARE_MATRIX_SIZE\n", argv[0]);
+    exit(1);
+  }
+
+  matrix_size = atoi(argv[1]);
 
   MPI_Init(&argc, &argv); /* starts MPI */
   MPI_Comm_rank(MPI_COMM_WORLD, &rank); /* Get process id */
   MPI_Comm_size(MPI_COMM_WORLD, &np); /* Get number of processes */
   MPI_Get_processor_name(hostname, &namelen); /* Get hostname of node */
   printf("[Using Host:%s -- Rank %d out of %d]\n", hostname, rank, np);
+# pragma omp parallel
+  {
+#pragma omp master
+    {
+  printf("openmp threads=%i\n", omp_get_num_threads());
+    }
+  }
 
   if (rank == 0) {
-    random_multiply(512, 512, 512, NUM_TRIALS);
+    //random_multiply(8192, 8192, 8192, 1);
+    random_multiply(matrix_size, matrix_size, matrix_size, 1);
   }
 
   MPI_Finalize();
   return 0;
 }
-
