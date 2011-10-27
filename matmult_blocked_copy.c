@@ -33,6 +33,7 @@
  *  - remove MIN check on innerloop of matmult(); split 1 set of 3 loops into
  *    2 sets of 3 loops
  *  - non square block size
+ *  - pad with zeros to for 2^N x 2^N size
  *
  */
 
