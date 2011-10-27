@@ -27,6 +27,15 @@
 
 #define MIN(a, b) (a < b) ? a : b
 
+/*
+ * Additional optimizations to consider:
+ *
+ *  - remove MIN check on innerloop of matmult(); split 1 set of 3 loops into
+ *    2 sets of 3 loops
+ *  - non square block size
+ *
+ */
+
 void
 basic_dgemm (const int lda, const int M, const int N, const int K, const double *A, const double *B, double *C)
 {
@@ -91,5 +100,4 @@ matmult (const int lda, const double *A, const double *B, double *C)
       }
     }
   }
-
 }
