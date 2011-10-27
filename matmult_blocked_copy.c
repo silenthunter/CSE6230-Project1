@@ -27,7 +27,7 @@
 
 #define MIN(a, b) (a < b) ? a : b
 
-void 
+void
 basic_dgemm (const int lda, const int M, const int N, const int K, const double *A, const double *B, double *C)
 {
   int i, j, k;
@@ -41,21 +41,21 @@ basic_dgemm (const int lda, const int M, const int N, const int K, const double 
         a_index = (i * K) + k; /* Compute index of A element */
         b_index = (j * K) + k; /* Compute index of B element */
         dotprod += A[a_index] * B[b_index]; /* Compute product of A and B */
-      } 
+      }
       int c_index = (j * lda) + i;
       C[c_index] = dotprod + C[c_index];
-    } 
-  } 
+    }
+  }
 }
 
-void 
+void
 dgemm_copy (const int lda, const int M, const int N, const int K, const double *A, const double *B, double *C)
 {
   int i, j, k;
   double A_temp[BLOCK_SIZE * BLOCK_SIZE];
   double B_temp[BLOCK_SIZE * BLOCK_SIZE];
- 
-  /* Copy matrix A into cache */  
+
+  /* Copy matrix A into cache */
   for (i = 0; i < K; i++) {
     for (j = 0; j < M; j++) {
       A_temp[i + j*K] = A[j + i*lda];
@@ -68,12 +68,12 @@ dgemm_copy (const int lda, const int M, const int N, const int K, const double *
       B_temp[j + i*K] = B[j + i*lda];
     }
   }
-  
+
   basic_dgemm (lda, M, N, K, A_temp, B_temp, C);
 }
 
-void 
-matmult (const int lda, const double *A, const double *B, double *C) 
+void
+matmult (const int lda, const double *A, const double *B, double *C)
 {
   int i;
 
@@ -90,6 +90,6 @@ matmult (const int lda, const double *A, const double *B, double *C)
         dgemm_copy (lda, M, N, K, A+i+k*lda, B+k+j*lda, C+i+j*lda);
       }
     }
-  }  
+  }
 
 }
