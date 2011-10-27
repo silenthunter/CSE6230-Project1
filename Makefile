@@ -1,146 +1,100 @@
-all:
-	@echo "======================================================================"
-	@echo "Proj 1: Distribued Matrix Multiply"
-	@echo ""
-	@echo "Valid build targets:"
-	@echo ""
-	@echo "unittest_mm_original : Build matrix multiply unittests"
-	@echo "  unittest_mm_openmp : Build matrix multiply unittests"
-	@echo "     unittest_mm_mkl : Build matrix multiply unittests"
-	@echo "unittest_mm_blocking : Build matrix multiply unittests"
-	@echo "      unittest_summa : Build summa unittests"
-	@echo "    time_mm_original : Build program to time local_mm (original)"
-	@echo "      time_mm_openmp : Build program to time local_mm (open MP)"
-	@echo "         time_mm_mkl : Build program to time local_mm (Intel MKL)"
-	@echo "    time_mm_blocking : Build program to time local_mm (L1/L2/L3 blocking/openmp technique)"
-	@echo "         time_mm_tlb : Build program to time local_mm (TLB considerations technique)"
-	@echo "          time_summa : Build program to time summa"
-	@echo "    run--unittest_mm : Submit unittest_mm job"
-	@echo " run--unittest_summa : Submit unittest_summa job"
-	@echo "        run--time_mm : Submit time_mm job"
-	@echo "     run--time_summa : Submit time_summa job"
-	@echo "              turnin : Create tarball with answers and results for T-Square"
-	@echo "               clean : Removes generated files, junk"
-	@echo "           clean-pbs : Removes genereated pbs files"
-	@echo "======================================================================"
+PROJID = proj1D
 
 LANG = C
 
+LINK_FORTRAN = -lgfortran -no-multibyte-chars
 LINK_OPENMP_GCC = -fopenmp
 LINK_MKL_GCC = -L/opt/intel/Compiler/11.1/059/mkl/lib/em64t/ \
-	-lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+               -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm
+
+LINK_OPENMP_ICC = -openmp
+LINK_MKL_ICC = -L/opt/intel/Compiler/11.1/059/mkl/lib/em64t/ \
+	-Wl,-R/opt/intel/Compiler/11.1/059/mkl/lib/em64t/  -lmkl_lapack \
+	-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
 
 
+CC = icc
+CFLAGS = -O2 -lm -lrt $(LINK_FORTRAN) $(LINK_MKL_ICC) $(LINK_OPENMP_ICC)
 
-CC = mpicc
-CFLAGS_OPENMP = -O -Wall -Wextra -lm $(LINK_OPENMP_GCC)
-CFLAGS_MKL = -O -Wall -Wextra -lm $(LINK_MKL_GCC)
-CFLAGS = -g -O3 -Wall -Wextra -lm
+FC = ifort
+FFLAGS = -O2 $(MKL_ICC) $(OPENMP_ICC)
 
-FC = mpif90
-FFLAGS = -O $(MKL_GCC) $(OPENMP_GCC)
+%.o : %.c
+	$(CC) -c $< $(CFLAGS) 
 
+%.o : %.f90
+	$(FC) -c $< $(FFLAGS) 
 
+TARGETS =
+TARGETS += benchmark--naive
+TARGETS += benchmark--blocked
+TARGETS += benchmark--blocked_copy
 
-MM = local_mm.o
-SUMMA = summa.o
+all: $(TARGETS)
 
-local_mm_original.o : local_mm.c local_mm.f90 local_mm.h
-	$(CC) $(CFLAGS) -o $@ -c local_mm.c
+common_OBJS = benchmark.o square_dgemm.o stopwatch.o matrix_utils.o 
+common_HEADERS = stopwatch.h matrix_utils.h matmult.h
 
-local_mm_openmp.o : local_mm.c local_mm.f90 local_mm.h
-	$(CC) $(CFLAGS_OPENMP) -DUSE_OPEN_MP -o $@ -c local_mm.c
-
-local_mm_mkl.o : local_mm.c local_mm.f90 local_mm.h
-	$(CC) $(CFLAGS_MKL) -DUSE_MKL -o $@ -c local_mm.c
-
-local_mm_blocking.o : local_mm.c local_mm.f90 local_mm.h
-	$(CC) $(CFLAGS_OPENMP) -DUSE_BLOCKING -o $@ -c local_mm.c
-
-local_mm_tlb.o : local_mm.c local_mm.f90 local_mm.h
-	$(CC) $(CFLAGS) -DUSE_TLB -o $@ -c local_mm.c
-
-matrix_utils.o : matrix_utils.c matrix_utils.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-unittest_mm_original : unittest_mm.c matrix_utils.o local_mm.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-unittest_mm_openmp : unittest_mm.c matrix_utils.o local_mm_openmp.o
-	$(CC) $(CFLAGS_OPENMP) -o $@ $^
-
-unittest_mm_mkl : unittest_mm.c matrix_utils.o local_mm_mkl.o
-	$(CC) $(CFLAGS_MKL) -o $@ $^
-
-unittest_mm_blocking : unittest_mm.c matrix_utils.o local_mm_blocking.o
-	$(CC) $(CFLAGS_OPENMP) -o $@ $^
-
-unittest_mm_tlb : unittest_mm.c matrix_utils.o local_mm_tlb.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-time_mm_original : time_mm.c matrix_utils.o local_mm_original.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-time_mm_openmp : time_mm.c matrix_utils.o local_mm_openmp.o
-	$(CC) $(CFLAGS_OPENMP) -o $@ $^
-
-time_mm_mkl : time_mm.c matrix_utils.o local_mm_mkl.o
-	$(CC) $(CFLAGS_MKL) -o $@ $^
-
-time_mm_blocking : time_mm.c matrix_utils.o local_mm_blocking.o
-	$(CC) $(CFLAGS_OPENMP) -o $@ $^
-
-time_mm_tlb : time_mm.c matrix_utils.o local_mm_tlb.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-time_mm : time_mm_original time_mm_openmp time_mm_blocking time_mm_tlb time_mm_mkl
-
-unittest_mm : unittest_mm_original unittest_mm_blocking unittest_mm_tlb unittest_mm_mkl unittest_mm_openmp
-
-unittest_summa : matrix_utils.o $(MM) $(SUMMA) unittest_summa.o
 ifeq ($(LANG),C)
-	$(CC) $(CFLAGS) -o $@ $^
+naive_MM = matmult_naive.o
+blocked_MM = matmult_blocked.o
+blocked_copy_MM = matmult_blocked_copy.o
 else
-	$(FC) $(FFLAGS) -o $@ $^
+naive_MM = matmult_naive.o matmult_wrapper.o
+blocked_MM = matmult_blocked.o matmult_wrapper.o
+blocked_copy_MM = matmult_blocked_copy.o matmult_wrapper.o
 endif
 
-time_summa : matrix_utils.o $(MM) $(SUMMA) time_summa.o
-ifeq ($(LANG),C)
-	$(CC) $(CFLAGS) -o $@ $^
-else
-	$(FC) $(FFLAGS) -o $@ $^
-endif
+benchmark--naive :  $(common_OBJS) $(naive_MM) 
+	$(CC) -o $@ $^ $(CFLAGS) 
 
-summa.o : summa.c summa.f90 summa.h local_mm.h
-ifeq ($(LANG),C)
-	$(CC) $(CFLAGS) -o summa.o -c summa.c
-else
-	$(FC) $(FFLAGS) -o summa.o -c summa.f90
-endif
+benchmark--blocked :  $(common_OBJS) $(blocked_MM) 
+	$(CC) -o $@ $^ $(CFLAGS) 
 
-unittest_summa.o : unittest_summa.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+benchmark--blocked_copy :  $(common_OBJS) $(blocked_copy_MM) 
+	$(CC) -o $@ $^ $(CFLAGS) 
 
-time_summa.o : time_summa.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+run-benchmark : benchmark--blocked_copy
+	./benchmark--blocked_copy
 
-summa_wrapper.o : summa_wrapper.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+qsub-benchmark : benchmark--blocked_copy clean-pbs
+	qsub benchmark.pbs
 
-local_mm_wrapper.o : local_mm_wrapper.c
-	$(CC) $(CFLAGS) -o $@ -c $<
 
+DISTFILES = Makefile
+DISTFILES += benchmark.c
+DISTFILES += benchmark.pbs
+DISTFILES += matmult.c
+DISTFILES += matmult.f90
+DISTFILES += matmult.h
+DISTFILES += matmult_blocked.c
+DISTFILES += matmult_blocked_copy.c
+DISTFILES += matmult_naive.c
+DISTFILES += matmult_wrapper.c
+DISTFILES += matrix_utils.c
+DISTFILES += matrix_utils.h
+DISTFILES += square_dgemm.c
+DISTFILES += square_dgemm.h
+DISTFILES += stopwatch.c
+DISTFILES += stopwatch.h
+
+dist: $(PROJID).tgz
+
+$(PROJID).tgz: $(DISTFILES)
+	if test -d "$(PROJID)" ; then rm -rf $(PROJID)/ ; fi
+	mkdir -p $(PROJID)
+	cp -r $(DISTFILES) $(PROJID)
+	tar cvf - $(PROJID)/* | gzip -9c > $@
+
+clean-dist:
+	rm -rf $(PROJID)/ $(PROJID).tgz
 
 .PHONY : clean
 .PHONY : clean-pbs
-.PHONY : time_mm
-.PHONY : unittest_mm
+.PHONY : clean-dist
 	
-clean : clean-pbs
-	rm -f unittest_mm unittest_summa time_summa
-	rm -f time_mm_mkl time_mm_openmp time_mm_original time_mm_blocking
-	rm -f time_mm_tlb unittest_mm_tlb
-	rm -f unittest_mm_original unittest_mm_mkl unittest_mm_openmp unittest_mm_blocking
+clean : clean-pbs clean-dist
+	rm -f $(TARGETS)
 	rm -f *.o
 	rm -f turnin.tar.gz
 
@@ -148,18 +102,6 @@ clean-pbs :
 	@ [ -d archive ] || mkdir -p ./archive/
 	if [ -f Proj1.e* ]; then mv -f Proj1.e* ./archive/; fi;
 	if [ -f Proj1.o* ]; then mv -f Proj1.o* ./archive/; fi;
-
-run--unittest_mm : unittest_mm clean-pbs
-	qsub unittest_mm.pbs
-
-run--unittest_summa : unittest_summa clean-pbs
-	qsub unittest_summa.pbs
-
-run--time_mm : time_mm clean-pbs
-	qsub time_mm.pbs
-
-run--time_summa : time_summa clean-pbs
-	qsub time_summa.pbs
 
 turnin : $(TURNIN_FILES)
 	tar czvf turnin.tar.gz *
