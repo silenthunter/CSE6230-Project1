@@ -28,7 +28,17 @@
 
 #define MIN(a, b) (a < b) ? a : b
 
-void 
+/*
+ * Additional optimizations to consider:
+ *
+ *  - remove MIN check on innerloop of matmult(); split 1 set of 3 loops into
+ *    2 sets of 3 loops
+ *  - non square block size
+ *  - pad with zeros to for 2^N x 2^N size
+ *
+ */
+
+void
 basic_dgemm (const int lda, const int M, const int N, const int K, const double *A, const double *B, double *C)
 {
   int i, j, k;
@@ -52,11 +62,11 @@ basic_dgemm (const int lda, const int M, const int N, const int K, const double 
       } 
       int c_index = (j * lda) + i;
       C[c_index] = dotprod + C[c_index];
-    } 
-  } 
+    }
+  }
 }
 
-void 
+void
 dgemm_copy (const int lda, const int M, const int N, const int K, const double *A, const double *B, double *C)
 {
   int i, j, k;
@@ -76,12 +86,12 @@ dgemm_copy (const int lda, const int M, const int N, const int K, const double *
       B_temp[j + i*K] = B[j + i*lda];
     }
   }
-  
+
   basic_dgemm (lda, M, N, K, A_temp, B_temp, C);
 }
 
-void 
-matmult (const int lda, const double *A, const double *B, double *C) 
+void
+matmult (const int lda, const double *A, const double *B, double *C)
 {
   int i;
 
@@ -98,6 +108,5 @@ matmult (const int lda, const double *A, const double *B, double *C)
         dgemm_copy (lda, M, N, K, A+i+k*lda, B+k+j*lda, C+i+j*lda);
       }
     }
-  }  
-
+  }
 }
