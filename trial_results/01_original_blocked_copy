@@ -1,0 +1,38 @@
+Timer: clock_gettime: POSIX high-resolution timer
+Timer resolution: 1e-09
+
+
+**Validating matmult**
+Validating n=256.....pass
+Validating n=262.....pass
+Validating n=512.....pass
+Validating n=1024.....pass
+Validating n=3960.....pass
+Validating n=3968.....pass
+Validating n=4080.....pass
+Validating n=4088.....pass
+Validating n=4096.....pass
+Validating n=4104.....pass
+Validating n=4160.....pass
+Validating n=4176.....pass
+Validating n=4608.....pass
+Validating n=5120.....pass
+Validating n=5128.....pass
+
+
+**Timing matmult**
+n=3968: 34.917582 gflops/s
+n=4096: 33.190951 gflops/s
+n=4104: 34.158786 gflops/s
+n=4608: 40.132637 gflops/s
+n=5120: 35.299358 gflops/s
+
+n=3968: 36.073684 gflops/s
+n=4096: 35.643387 gflops/s
+n=4104: 34.580877 gflops/s
+n=4608: 40.557228 gflops/s
+n=5120: 31.735184 gflops/s
+
+
+
+Average Performance: 35.628968 gflops/s
