@@ -7,7 +7,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <ia32intrin.h>
 
 #include "matmult.h"
 
@@ -43,23 +42,16 @@ basic_dgemm (const int lda, const int M, const int N, const int K, const double 
 {
   int i, j, k;
   int bs = BLOCK_SIZE;
-  __m128d a, b, prod;
-  __declspec(align(16)) double prodResult[4];
 
   for (i = 0; i < M; i++) {
     for (j = 0; j < N; j++) {
       double dotprod = 0.0; /* Accumulates the sum of the dot-product */
-      for (k = 0; k < K; k+=2) {
+      for (k = 0; k < K; k++) {
         int a_index, b_index;
         a_index = (i * K) + k; /* Compute index of A element */
         b_index = (j * K) + k; /* Compute index of B element */
-	a = _mm_load_pd(&A[a_index]);
-	b = _mm_load_pd(&B[b_index]);
-	prod = _mm_mul_pd(a, b);
-	_mm_store_pd(prodResult, prod);
-	dotprod += prodResult[0] + prodResult[1];
-        //dotprod += A[a_index] * B[b_index]; /* Compute product of A and B */
-      } 
+        dotprod += A[a_index] * B[b_index]; /* Compute product of A and B */
+      }
       int c_index = (j * lda) + i;
       C[c_index] = dotprod + C[c_index];
     }
@@ -70,10 +62,10 @@ void
 dgemm_copy (const int lda, const int M, const int N, const int K, const double *A, const double *B, double *C)
 {
   int i, j, k;
-  __declspec(align(16))double A_temp[BLOCK_SIZE * BLOCK_SIZE];
-  __declspec(align(16))double B_temp[BLOCK_SIZE * BLOCK_SIZE];
- 
-  /* Copy matrix A into cache */  
+  double A_temp[BLOCK_SIZE * BLOCK_SIZE];
+  double B_temp[BLOCK_SIZE * BLOCK_SIZE];
+
+  /* Copy matrix A into cache */
   for (i = 0; i < K; i++) {
     for (j = 0; j < M; j++) {
       A_temp[i + j*K] = A[j + i*lda];
